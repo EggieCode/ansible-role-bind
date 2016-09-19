@@ -1,0 +1,85 @@
+## {{ ansible_managed }}
+
+view "internal" {
+    match-clients { internals; };
+    recursion yes;
+    // prime the server with knowledge of the root servers
+    zone "." {
+        type hint;
+        file "/etc/bind/db.root";
+    };
+
+    // be authoritative for the localhost forward and reverse zones, and for
+    // broadcast zones as per RFC 1912
+
+    zone "localhost" {
+        type master;
+        file "/etc/bind/db.local";
+    };
+
+    zone "127.in-addr.arpa" {
+        type master;
+        file "/etc/bind/db.127";
+    };
+
+    zone "0.in-addr.arpa" {
+        type master;
+        file "/etc/bind/db.0";
+    };
+
+    zone "255.in-addr.arpa" {
+        type master;
+        file "/etc/bind/db.255";
+    };
+    ## Masters
+
+{% for master_zone in bind_config_internal_master_zones %}
+    zone "{{ master_zone.name }}" {
+        type master;
+        file "{{bind_base_zones_path}}/{{bind_masterzones_path}}/internal/db.{{ master_zone.name }}";
+{% if master_zone.allow_transfer is defined %}
+        allow-transfer {
+{% for allow_transfer in master_zone.allow_transfer %}
+   {{ allow_transfer }};
+{% endfor %}
+        };
+{% endif %}
+{% if master_zone.allow_update is defined %}
+        allow-update {
+{% for allow_update in master_zone.allow_update %}
+        {{ allow_update }};
+{% endfor %}
+        };
+{% endif %}
+    };
+
+{% endfor %}
+    ## Slaves
+{% for slave_zone in bind_config_internal_slave_zones %}
+    ######## {{ slave_zone.name }} ({{ slave_zone.zones|count }} zones)
+{% for zone in slave_zone.zones %}
+    zone "{{ zone }}" {
+        type slave;
+        masterfile-format text;
+        file "{{bind_base_zones_path}}/{{bind_slavezones_path}}/internal/db.{{ zone }}";
+        masters {
+{% for master in slave_zone.masters %}
+          {{ master }};
+{% endfor %}
+        };
+    };
+{% endfor %}
+{% endfor %}
+{% for forward_zone in bind_config_internal_forward_zones %}
+    ######## FORWARD: {{ forward_zone.name }} 
+    zone "{{ forward_zone.name }}" {
+        type forward;
+        forward only;
+        forwarders {
+{% for forwarder in forward_zone.forwarders %}
+          {{ forwarder }};
+{% endfor %}
+        };
+    };
+{% endfor %}
+};

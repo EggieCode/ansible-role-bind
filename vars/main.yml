@@ -6,3 +6,6 @@ bind_service_name: bind9
 bind_pkgs:
   - bind9
   - dnsutils
+bind_folders:
+   - { folder: "{{ bind_masterzones_path }}", subfolders: ["internal","external"] }
+   - { folder: "{{ bind_slavezones_path }}", subfolders: ["internal","external"] }
