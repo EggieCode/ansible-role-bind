@@ -1,0 +1,58 @@
+## {{ ansible_managed }}
+
+view "external" {
+    match-clients { any; };
+    recursion no;
+    ## Master
+{% for master_zone in bind_config_external_master_zones %}
+    zone "{{ master_zone.name }}" {
+        type master;
+        file "{{bind_base_zones_path}}/{{bind_masterzones_path}}/external/db.{{ master_zone.name }}";
+{% if master_zone.allow_transfer is defined %}
+        allow-transfer {
+{% for allow_transfer in master_zone.allow_transfer %}
+        {{ allow_transfer }};
+{% endfor %}
+        };
+{% endif %}
+{% if master_zone.allow_update is defined %}
+        allow-update {
+{% for allow_update in master_zone.allow_update %}
+        {{ allow_update }};
+{% endfor %}
+        };
+{% endif %}
+    };
+
+{% endfor %}
+    ## Slaves 
+
+{% for slave_zone in bind_config_external_slave_zones %}
+    ######## {{ slave_zone.name }} ({{ slave_zone.zones|count }} zones)
+{% for zone in slave_zone.zones %}
+    zone "{{ zone }}" {
+        type slave;
+        masterfile-format text;
+        file "{{bind_base_zones_path}}/{{bind_slavezones_path}}/external/db.{{ zone }}";
+        masters {
+{% for master in slave_zone.masters %}
+          {{ master }};
+{% endfor %}
+        };
+    };
+{% endfor %}
+{% endfor %}
+
+{% for forward_zone in bind_config_external_forward_zones %}
+    ######## FORWARD: {{ forward_zone.name }} 
+    zone "{{ forward_zone.name }}" {
+        type forward;
+        forward only;
+        forwarders {
+{% for forwarder in forward_zone.forwarders %}
+          {{ forwarder }};
+{% endfor %}
+        };
+    };
+{% endfor %}
+};

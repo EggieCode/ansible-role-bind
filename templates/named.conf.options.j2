@@ -30,16 +30,16 @@ options {
 
         //provide-ixfr no ;
 
-	{% if bind_config_master_forwarders %}
+{% if bind_config_master_forwarders %}
         // If your ISP provided one or more IP addresses for stable
         // nameservers, you probably want to use them as forwarders.
 
         forwarders {
-        {% for forwarders in bind_config_master_forwarders %}
+{% for forwarders in bind_config_master_forwarders %}
             {{ forwarders }};
-        {% endfor %}
+{% endfor %}
         };
-	{% endif %}
+{% endif %}
 
         //dnssec-enable yes;
         //dnssec-validation yes;
@@ -49,16 +49,28 @@ options {
         listen-on { {{ bind_config_listen_on }}; }; 
         listen-on-v6 { any; };
 
-  {% if bind_config_allow_query %}
-      allow-query {
-      {% for queries in bind_config_allow_query %}
+{% if bind_config_allow_query %}
+        allow-query {
+{% for queries in bind_config_allow_query %}
         {{ queries }};
-      {% endfor %}
-      };
-  {% else %}
-        allow-query { any; };              // This is the default
-  {% endif %}
+{% endfor %}
+        };
+{% else %}
+        allow-query { any; };                                       // This is the default
+{% endif %}
 
         recursion {{ bind_config_recursion }};                      // Do not provide recursive service
         zone-statistics yes;
+};
+
+acl internals {
+127.0.0.1;
+::1;
+{% if bind_acl_internals is not none %} 
+{% for ip in bind_acl_internals %}
+        {{ ip }};    
+{% endfor %}
+{% else %}
+        any;    
+{% endif %}
 };
