@@ -25,9 +25,6 @@ options {
 
         notify yes;
 
-        also-notify {
-        };
-
         //provide-ixfr no ;
 
 {% if bind_config_master_forwarders %}
@@ -41,8 +38,8 @@ options {
         };
 {% endif %}
 
-        //dnssec-enable yes;
-        //dnssec-validation yes;
+        dnssec-enable yes;
+        dnssec-validation yes;
 
         auth-nxdomain no;    # conform to RFC1035
         
@@ -74,3 +71,15 @@ acl internals {
         any;    
 {% endif %}
 };
+
+
+key "internal-key" {
+    algorithm "{{ bind_config_internal_algorithm }}";
+    secret "{{ bind_config_internal_secret }}";
+};
+
+key "external-key" {
+    algorithm "{{ bind_config_external_algorithm }}";
+    secret "{{ bind_config_external_secret }}";
+};
+

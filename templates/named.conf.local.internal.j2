@@ -1,8 +1,12 @@
 ## {{ ansible_managed }}
 
 view "internal" {
-    match-clients { internals; };
+    match-clients { key internal-key; !key external-key; internals; };
     recursion yes;
+    allow-update { key internal-key; !key external-key; };
+    allow-transfer { key internal-key; !key external-key; };
+    allow-query { key internal-key; !key external-key; internals; };
+
     // prime the server with knowledge of the root servers
     zone "." {
         type hint;
@@ -32,6 +36,12 @@ view "internal" {
         file "/etc/bind/db.255";
     };
     ## Masters
+{% for addr in bind_config_internal_servers %}
+    server {{ addr }} {
+       transfer-format many-answers;
+       keys { "internal-key"; };
+    };
+{% endfor %}
 
 {% for master_zone in bind_config_internal_master_zones %}
     zone "{{ master_zone.name }}" {
@@ -51,24 +61,44 @@ view "internal" {
 {% endfor %}
         };
 {% endif %}
+{% if master_zone.also_notify is defined %}
+        also-notify {
+{% for also_notify in master_zone.also_notify %}
+        {{ also_notify }};
+{% endfor %}
+        };
+{% endif %}
     };
 
 {% endfor %}
     ## Slaves
 {% for slave_zone in bind_config_internal_slave_zones %}
-    ######## {{ slave_zone.name }} ({{ slave_zone.zones|count }} zones)
-{% for zone in slave_zone.zones %}
-    zone "{{ zone }}" {
+    zone "{{ slave_zone.name }}" {
         type slave;
         masterfile-format text;
-        file "{{bind_base_zones_path}}/{{bind_slavezones_path}}/internal/db.{{ zone }}";
+        file "{{bind_base_zones_path}}/{{bind_slavezones_path}}/internal/db.{{ slave_zone.name }}";
+{% if slave_zone.allow_transfer is defined %}
+        allow-transfer {
+{% for allow_transfer in slave_zone.allow_transfer %}
+   {{ allow_transfer }};
+{% endfor %}
+        };
+{% endif %}
+{% if slave_zone.allow_update is defined %}
+        allow-update {
+{% for allow_update in slave_zone.allow_update %}
+        {{ allow_update }};
+{% endfor %}
+        };
+{% endif %}
         masters {
-{% for master in slave_zone.masters %}
-          {{ master }};
+{% for master in bind_config_internal_slave_master %}
+        {{ master }};
 {% endfor %}
         };
     };
-{% endfor %}
+
+
 {% endfor %}
 {% for forward_zone in bind_config_internal_forward_zones %}
     ######## FORWARD: {{ forward_zone.name }} 

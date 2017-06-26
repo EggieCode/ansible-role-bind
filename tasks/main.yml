@@ -11,7 +11,8 @@
   with_items:
    - internal
    - external
-  notify: reload bind
+  notify:
+    - reload bind
 
 - name: configure bind
   copy: src=named.conf dest={{ bind_config_basepath }}/named.conf owner={{ bind_user }} group={{ bind_group }} mode=0600
@@ -21,11 +22,39 @@
   template: src=named.conf.options.j2 dest={{ bind_config_basepath }}/named.conf.options owner={{ bind_user }} group={{ bind_group }} mode=0600
   notify: restart bind
 
+- name: create_folders
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: bind
+    group: bind
+    mode: 755
+  with_items:
+    - "{{ bind_base_zones_path }}/{{ bind_masterzones_path }}"
+    - "{{ bind_base_zones_path }}/{{ bind_masterzones_path }}/internal"
+    - "{{ bind_base_zones_path }}/{{ bind_masterzones_path }}/external"
+    - "{{ bind_base_zones_path }}/{{ bind_slavezones_path }}"
+    - "{{ bind_base_zones_path }}/{{ bind_slavezones_path }}/internal"
+    - "{{ bind_base_zones_path }}/{{ bind_slavezones_path }}/external"
+
 - name: Copy zone files
-  synchronize: src={{ bind_masterzones_path }} dest={{ bind_base_zones_path }} delete=yes recursive=yes mode=push
-  notify: reload bind
+  synchronize: 
+    src: "{{ bind_masterzones_path }}"
+    dest: "{{ bind_base_zones_path }}"
+    delete: "yes"
+    recursive: "yes"
+    mode: "push"
+    rsync_opts:
+      - "--chown=bind:bind"
   tags: bind-zones
-  when: bind_config_internal_master_zones is not none
+  when: bind_config_internal_master_zones or bind_config_external_master_zones
+
+- name: reload zones
+  shell: "rndc freeze {{ item.name }} in {{ item.view }}; rndc reload {{ item.name }} in {{ item.view }}; rndc thaw {{ item.name }} in {{ item.view }}"
+  tags: bind-zones
+  with_items: 
+    - "{{ bind_config_changed_zones }}"
+  when: bind_config_internal_master_zones or bind_config_external_master_zones and bind_config_changed_zones
 
 - name: start/stop bind service
   service: name={{ bind_service_name }} state={{ bind_service_state }} enabled={{ bind_service_enabled }}

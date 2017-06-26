@@ -4,3 +4,7 @@
 
 - name: reload bind
   service: name={{ bind_service_name }} state=reloaded
+
+- name: reload zones
+  shell: rndc freeze; rndc reload; rndc thaw
+

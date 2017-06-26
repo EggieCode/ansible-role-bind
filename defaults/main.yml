@@ -22,3 +22,6 @@ bind_masterzones_path: "masters"
 bind_slavezones_path: "slaves"
 bind_config_listen_on: any
 bind_config_allow_query: []
+
+bind_config_external_slave_master: []
+bind_config_internal_slave_master: []
