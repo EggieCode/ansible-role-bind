@@ -28,7 +28,7 @@
     state: directory
     owner: bind
     group: bind
-    mode: 755
+    mode: 0755
   with_items:
     - "{{ bind_base_zones_path }}/{{ bind_masterzones_path }}"
     - "{{ bind_base_zones_path }}/{{ bind_masterzones_path }}/internal"
@@ -46,6 +46,7 @@
     mode: "push"
     rsync_opts:
       - "--chown=bind:bind"
+      - "--chmod=755"
   tags: bind-zones
   when: bind_config_internal_master_zones or bind_config_external_master_zones
 

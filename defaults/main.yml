@@ -1,4 +1,5 @@
 ---
+bind_config_changed_zones: []
 bind_acl_internals: []
 bind_config_internal_master_zones: []
 bind_config_external_master_zones: []
