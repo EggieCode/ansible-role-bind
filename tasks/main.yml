@@ -1,13 +1,16 @@
 ---
 - name: install bind packages
-  apt: pkg={{ item }} state={{ bind_pkg_state }}
-  with_items: "{{ bind_pkgs }}"
-
-- name: install rsync
-  apt: pkg=rsync state=present
+  apt: 
+    pkg: "{{ bind_pkgs }}"
+    state: "{{ bind_pkg_state }}"
 
 - name: setup zones
-  template: src=named.conf.local.{{ item }}.j2 dest={{ bind_config_basepath }}/named.conf.local.{{ item }} owner={{ bind_user }} group={{ bind_group }} mode=0600
+  template: 
+    src: "named.conf.local.{{ item }}.j2"
+    dest: "{{ bind_config_basepath }}/named.conf.local.{{ item }}"
+    owner: "{{ bind_user }}"
+    group: "{{ bind_group }}"
+    mode: "0600"
   with_items:
    - internal
    - external
@@ -15,11 +18,21 @@
     - reload bind
 
 - name: configure bind
-  copy: src=named.conf dest={{ bind_config_basepath }}/named.conf owner={{ bind_user }} group={{ bind_group }} mode=0600
+  copy: 
+    src: "named.conf"
+    dest: "{{ bind_config_basepath }}/named.conf"
+    owner: "{{ bind_user }}"
+    group: "{{ bind_group }}"
+    mode: "0600"
   notify: restart bind
 
 - name: configure bind options
-  template: src=named.conf.options.j2 dest={{ bind_config_basepath }}/named.conf.options owner={{ bind_user }} group={{ bind_group }} mode=0600
+  template: 
+    src: "named.conf.options.j2"
+    dest: "{{ bind_config_basepath }}/named.conf.options"
+    owner: "{{ bind_user }}"
+    group: "{{ bind_group }}"
+    mode: "0600"
   notify: restart bind
 
 - name: create_folders
@@ -58,4 +71,7 @@
   when: bind_config_internal_master_zones or bind_config_external_master_zones and bind_config_changed_zones
 
 - name: start/stop bind service
-  service: name={{ bind_service_name }} state={{ bind_service_state }} enabled={{ bind_service_enabled }}
+  service: 
+    name: "{{ bind_service_name }}"
+    state: "{{ bind_service_state }}"
+    enabled: "{{ bind_service_enabled }}"
